@@ -1,0 +1,25 @@
+{
+  "name": "varmisinapp-api",
+  "version": "1.0.0",
+  "description": "backend with nodejs",
+  "main": "src/server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon server.js"
+  },
+  "author": "enesakbl",
+  "license": "ISC",
+  "dependencies": {
+    "crypto-js": "^4.1.1",
+    "dotenv": "^16.0.1",
+    "express": "^4.18.1",
+    "helmet": "^5.1.0",
+    "http-status": "^1.5.2",
+    "joi": "^17.6.0",
+    "jsonwebtoken": "^8.5.1",
+    "md5": "^2.3.0",
+    "morgan": "^1.10.0",
+    "mysql": "^2.18.1",
+    "winston": "^3.8.1"
+  }
+}

@@ -1,0 +1,2 @@
+const jwt_secret_key = "3d1f24fe4760757f60bd2a3041d879c3a13c4678120e2101b2d4bed4a79b2238"
+module.exports = jwt_secret_key
