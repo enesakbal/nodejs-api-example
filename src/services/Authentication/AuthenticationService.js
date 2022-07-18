@@ -6,52 +6,50 @@ const keyGenerator = require('../../helpers/keyGenerator');
 const datamanager = require('../../helpers/dateManager')
 const md5 = require('md5');
 
-exports.register = async (username, password, phone_number, email_address, profile_picture, birth_date) => {
+exports.register = async (username, password, email_address, profile_picture, birth_date, gender) => {
     try {
         console.log(datamanager.today().toString());
-
-        const checkUser = await this.checkUser(username, email_address, phone_number);
+        const checkUser = await this.checkUser(username, email_address);
         if (!checkUser) {
             let query =
-                "INSERT INTO `Users` (`username`, `password_`, `phone_number`, `email_address`, `profile_picture`, `birth_date`) VALUES" +
-                `('${username}','${password}','${phone_number}','${email_address}','${profile_picture}','${birth_date}')`;
+                "INSERT INTO `Users` (`username`, `password_`, `email_address`, `profile_picture`, `birth_date`,`gender`) VALUES" +
+                `('${username}','${password}','${email_address}','${profile_picture}','${birth_date}','${gender}')`;
 
-            dbconnection.query(query, (err, result) => {
-                if (err) throw err;
-                console.log(result);
+            return new Promise(function (resolve, reject) {
+                dbconnection.query(query, (err, result) => {
+                    if (err) throw err;
+                    console.log(result);
+                });
+                resolve({
+                    status: true,
+                    message: responseMessages.register_success.register_created_account
+                });
             });
-            return {
-                status: true,
-                message: responseMessages.register_success[100]
-            };
         } else {
             return checkUser;
         }
     } catch (error) {
         console.error(error)
-
     }
 
 }
 
 
-exports.checkUser = async (username, email_address, phone_number) => {
+exports.checkUser = async (username, email_address) => {
+    let query = "SELECT email_address,username FROM Users WHERE email_address = '" + email_address + "' OR username = '" + username + "'";
     return new Promise(function (resolve, reject) {
-        dbconnection.query(
-            "SELECT email_address,username, phone_number FROM Users WHERE email_address = '" + email_address + "' OR username = '" + username + "' OR phone_number ='" + phone_number + "'",
-            function (err, result) {
-                if (err) throw err;
-                result.map(value => {
-                    if (value.username === username) {
-                        resolve({ status: false, message: responseMessages.register_error[100] })
-                    } else if (value.email_address === email_address) {
-                        resolve({ status: false, message: responseMessages.register_error[101] })
-                    } else if (value.phone_number === phone_number) {
-                        resolve({ status: false, message: responseMessages.register_error[102] })
-                    }
-                })
-                resolve(null);
-            }
+        dbconnection.query(query, function (err, result) {
+            if (err) throw err;
+            //map olmasının nedeni birden fazla sonuç gelebilir.
+            result.map(value => {
+                if (value.username === username) {
+                    resolve({ status: false, message: responseMessages.register_error.register_already_exists_username })
+                } else if (value.email_address === email_address) {
+                    resolve({ status: false, message: responseMessages.register_error.register_already_exists_email })
+                }
+            })
+            resolve(null);
+        }
         );
     });
 };
@@ -60,7 +58,7 @@ exports.checkUser = async (username, email_address, phone_number) => {
 
 exports.getAllUsers = async () => {
     let query = "SELECT * FROM Users";
-
+    // silinecek
     return new Promise(function (resolve, reject) {
         dbconnection.query(query, (err, result) => {
             if (err) throw err;
@@ -93,11 +91,10 @@ exports.login = async (email_address, password) => {
                                 id: result[0].PK_user_id,
                                 username: result[0].username,
                                 zeta_point: result[0].zeta_point,
-                                phone_number: result[0].phone_number,
                                 email_address: result[0].email_address,
                                 profile_picture: result[0].profile_picture,
                                 birth_date: result[0].birth_date,
-                                verify_phone_number: result[0].verify_phone_number,
+                                gender: result[0].gender,
                                 verify_email_address: result[0].verify_email_address,
                                 account_created_time: result[0].account_created_time
                             },
@@ -105,21 +102,23 @@ exports.login = async (email_address, password) => {
                             { expiresIn: '180d' }
                         )
                         console.log(token);
-                        resolve({ status: true, message: responseMessages.login_success[100], token, id: result[0].PK_user_id })
+                        resolve({ status: true, message: responseMessages.login_success.login_successfully, token, id: result[0].PK_user_id })
                     } else {
-                        resolve({ status: false, message: responseMessages.login_error[100] })
+                        resolve({ status: false, message: responseMessages.login_error.login_error_invalid_email_or_password })
                     }
                 });
             })
         }
     } catch (error) {
         console.error(error)
-
-
     }
 }
 
+
 exports.checkSentCode = async (email_address) => {
+    //VerifyCodePool tablosunda birden fazla aynnı kayıt olmasın diye böyle bir şey yaptım
+    //zaten bunu yapmasam yine de çalışmayacaktı çünkü email_address primary key olarak kayıtlı.
+    //dolayısıyla bir email_address den yalnızca bir tane olabilir.
     try {
         let query = "SELECT verify_date FROM VerifyCodePool WHERE email_address = '" + email_address + "'";
         return new Promise(function (resolve, reject) {
@@ -133,6 +132,8 @@ exports.checkSentCode = async (email_address) => {
                 }
             })
         }).then((response) => {
+            //buradaki response resolveun içindekileri aynen geri verir
+            //sanırım burada responsun yanına error yazıp reject ile komtrol edebilirim.
             if (response) {
                 let query = "DELETE FROM VerifyCodePool WHERE email_address = '" + email_address + "'";
                 dbconnection.query(query, async (err, result) => {
@@ -149,30 +150,31 @@ exports.checkSentCode = async (email_address) => {
 }
 
 
+
 exports.forgetPassword = async (email_address) => {
     const checkUser = await this.checkUser(null, email_address, null);
 
     try {
         if (checkUser === null) {
-            return { status: false, message: responseMessages.forget_password_error[100] };
+            return { status: false, message: responseMessages.forget_password_error.forget_password_not_found_email_address };
         } else {
             await this.checkSentCode(email_address);
 
-            
+
             const todayWithTime = await datamanager.todayWithTime();
             const key = await keyGenerator.randomkey();
-            console.log(key);
-            console.log(md5(key))
+            console.log("verify code :" + key);
+            console.log("verify code :" + md5(key));
             let query = "INSERT INTO VerifyCodePool(email_address,verify_code,verify_date) VALUES ('" + email_address + "' , '" + md5(key) + "','" + todayWithTime + "')";
             return new Promise(function (resolve, reject) {
                 dbconnection.query(query, (err, result) => {
                     if (err) throw err;
 
                     if (result.length === 0)
-                        resolve({ status: false, message: responseMessages.forget_password_error[103] })
+                        resolve({ status: false, message: responseMessages.forget_password_error.forget_password_an_unknown_error_occurred })
 
                     else
-                        resolve({ status: true, message: responseMessages.forget_password_success[100] })
+                        resolve({ status: true, message: responseMessages.forget_password_success.forget_password_code_sent_successfully })
                 });
             });
         }
@@ -193,16 +195,18 @@ exports.verifyCode = async (email_address, verify_code) => {
                 if (err) throw err;
                 console.log(result)
                 if (result.length === 0) {
-                    resolve({ status: false, message: responseMessages.forget_password_error[101] })
+                    resolve({ status: false, message: responseMessages.forget_password_error.forget_password_incorret_code })
                 }
                 else {
                     //bu noktada kod ve email doğru girilmiştir.
                     let verify_date = result[0].verify_date;
                     const diffrence = await datamanager.differenceDatesAndToday(verify_date.toUTCString());
+
+                    //5 dakika olayı burada
                     if (diffrence > 5.0) {
-                        resolve({ status: false, message: responseMessages.forget_password_error[102] })
+                        resolve({ status: false, message: responseMessages.forget_password_error.forget_password_expired_code })
                     } else {
-                        resolve({ status: true, message: responseMessages.forget_password_success[102] })
+                        resolve({ status: true, message: responseMessages.forget_password_success.forget_password_code_is_valid })
                     }
                 }
             })
@@ -231,12 +235,13 @@ exports.updatePassword = async (email_address, verify_code, password) => {
             dbconnection.query(query, async (err, result) => {
                 if (err) throw err;
                 if (result.length === 0) {
-                    resolve({ status: false, message: responseMessages.forget_password_error[103] })
+                    resolve({ status: false, message: responseMessages.forget_password_error.forget_password_an_unknown_error_occurred })
                 } else {
-                    resolve({ status: true, message: responseMessages.forget_password_success[103] })
+                    resolve({ status: true, message: responseMessages.forget_password_success.forget_password_reset_successfully })
                 }
             })
         }).then((response) => {
+            //şifre değiştirme işlemi başarılı ise VerifyCodePool tablosunda veri tutulmasına gerek yoktur.
             if (response.status) {
                 let query = "DELETE FROM VerifyCodePool WHERE email_address = '" + email_address + "'";
                 dbconnection.query(query, async (err, result) => {
@@ -249,9 +254,17 @@ exports.updatePassword = async (email_address, verify_code, password) => {
         });
     } catch (error) {
         console.error(error)
-
     }
 }
+
+
+
+
+
+
+
+
+
 /**
  {
 
@@ -264,8 +277,4 @@ exports.updatePassword = async (email_address, verify_code, password) => {
     "verify_code": 400160
 }
 
- 
- 
- 
- 
  */
