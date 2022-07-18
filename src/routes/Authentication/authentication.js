@@ -11,7 +11,9 @@ router.post('/register', controller.register);
 router.post('/login', controller.login);
 
 router.post('/login/password/forgetpassword', controller.forgetPassword);
-router.post('/login/password/verifycode', controller.verifyCode);
+router.post('/login/password/updatepassword', controller.updatePassword);
+
+router.post('/try',controller.try)
 
 // router.post('/login/password/checkforgetpassword', controller.checkforgetpassword);
 // router.post('/login/password/updatePassword', controller.updatePassword);

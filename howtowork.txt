@@ -1,0 +1,28 @@
+----REGISTER SERVICE----
+1.  Öncelikle checkUser() fonksiyonundan değeri kontrol etmeliyiz. Bu fonksiyon 
+    çeşitli parametler alarak gerekli bilgilerin unique kalmasını sağlar.
+2.  Daha sonra database'e gidip kayıt eder.
+
+----LOGIN SERVICE----
+1.  Ufak bir checkUser() kontrolü yapıyoruz. Buradaki amaç servisi hızlandırmak.
+2.  Sorgu sonucuna göre farklı değerler dönüyoruz.
+3.  Eğer sorgu başarılı olursa jwt kullanarak token döndürüyoruz.
+
+
+----FORGET PASSWORD SERVICE----
+1.  Sadece email_address kullanarak checkUser() yapıyoruz. Bu servisi hızlandırmak için.
+2.  Random bir key oluşturuyoruz. Daha sonra key'i ve anlık zamanı parametre olarak sorguda
+    kullanıyoruz. Sorgu VerifyCodePool tablosuna veri girişi yapıyor.
+3.  Ara servis olarak checkSentCode() fonksiyonu VerifyCodePool tablosunda email tekrarına düşülmesini engelliyor.
+    Eğer bir email ait kayıt varsa siliyor yoksa devam ediyor.
+
+----VERIFY CODE SERVICE----
+1.  Bu serviste kullanılan email_address'i frontend tarafında kesin olarak veriyoruz.
+2.  Bunun nedeni forgetPassword() kısmında email kontrolünü çoktan yapmış olmamızdır.
+3.  Bu servisin asıl amacı gönderilen verify code'un geçerliliğinin bitip bitmemesinin kontrolüdür.
+
+----UPDATE PASSWORD----
+1.  Sadece önceki iki servisten geçiş yapabilmiş kullanıcıların kullanabildiği servistir.
+2.  3 adet parametre almasının nedeni servisin güvenliğiyle ilgilidir.
+3.  verifyCode servisini burada kullanıyoruz.
+4.  Kullanıcı şifresini başarıyla değiştirdiğinde VerifyCodePool tablosundan değeri siliniyor.

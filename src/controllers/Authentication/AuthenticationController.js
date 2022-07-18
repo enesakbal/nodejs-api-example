@@ -27,7 +27,13 @@ exports.getAllUsers = async (req, res, next) => {
 }
 
 exports.login = async (req, res, next) => {
-    const rp = await authService.login(req.body.email_address, md5(req.body.password));
+    const rp =
+        await authService.login(
+            req.body.email_address,
+            md5(req.body.password)
+        );
+    
+    console.log(rp)
 
     if (rp.status) {
         return res.status(httpStatus.OK).send(rp)
@@ -39,16 +45,24 @@ exports.login = async (req, res, next) => {
 
 exports.forgetPassword = async (req, res, next) => {
     const rp = await authService.forgetPassword(req.body.email_address);
+    console.log(rp)
+
     //todo burada mail göndermeliyim
     return res.status(httpStatus.OK).send(rp)
-
-
 }
 
-exports.verifyCode = async (req, res, next) => {
-    const rp = await authService.verifyCode(req.body.email_address, req.body.verify_code);
-    return res.send(rp)
+
+exports.updatePassword = async (req, res, next) => {
+    const rp = await authService.updatePassword(req.body.email_address, md5(req.body.verify_code), md5(req.body.password));
+    return res.status(httpStatus.OK).send(rp)
+
 }
+exports.try = async (req, res, next) => {
+    const rp = await authService.checkSentCode(req.body.email_address);
+    return res.status(httpStatus.OK).send(rp)
+}
+
+
 
 
 /**

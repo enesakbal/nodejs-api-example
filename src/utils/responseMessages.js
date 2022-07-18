@@ -18,13 +18,16 @@ const responseMessages = {
     },
     "forget_password_success": {
         "100": "E-postanıza şifre yenileme kodu gönderilmiştir.",
-        "101": "Email doğrulaması başarılı."
+        "101": "Email doğrulaması başarılı.",
+        "102": "Şifre yenileme kodu geçerli.",
+        "103": "Şifreniz başarıyla yenilenmiştir."
     }
     ,
     "forget_password_error": {
         "100": "Kullanıcı bulunamadı. Email adresinizi kontrol ediniz.",
         "101": "Girmiş olduğunuz kod eşleşmiyor. Lütfen e-postanıza gelen kodu kontrol ediniz.",
-
+        "102": "Girmiş olduğunuz kodun süresi dolmuştur lütfen tekrar deneyiniz.",
+        "103": "Bir hata meydana geldi. Lütfen tekrar deneyiniz."
         
     }
 

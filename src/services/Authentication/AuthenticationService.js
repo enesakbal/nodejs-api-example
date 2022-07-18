@@ -3,10 +3,13 @@ const responseMessages = require('../../utils/responseMessages')
 const jwt = require('jsonwebtoken');
 const jwt_secret_key = require("../../config/jwt_config");
 const keyGenerator = require('../../helpers/keyGenerator');
+const datamanager = require('../../helpers/dateManager')
 const md5 = require('md5');
 
 exports.register = async (username, password, phone_number, email_address, profile_picture, birth_date) => {
     try {
+        console.log(datamanager.today().toString());
+
         const checkUser = await this.checkUser(username, email_address, phone_number);
         if (!checkUser) {
             let query =
@@ -25,7 +28,8 @@ exports.register = async (username, password, phone_number, email_address, profi
             return checkUser;
         }
     } catch (error) {
-        await utils.errorLog("authentication-service-register", error.message, error);
+        console.error(error)
+
     }
 
 }
@@ -56,6 +60,7 @@ exports.checkUser = async (username, email_address, phone_number) => {
 
 exports.getAllUsers = async () => {
     let query = "SELECT * FROM Users";
+
     return new Promise(function (resolve, reject) {
         dbconnection.query(query, (err, result) => {
             if (err) throw err;
@@ -108,101 +113,159 @@ exports.login = async (email_address, password) => {
             })
         }
     } catch (error) {
+        console.error(error)
 
-        await utils.errorLog("authentication-service-login", error.message, error);
 
     }
 }
 
-exports.today = async () => {
-    var today = new Date();
-    var dd = String(today.getDate()).padStart(2, '0');
-    var mm = String(today.getMonth() + 1).padStart(2, '0'); //January is 0!
-    var yyyy = today.getFullYear();
+exports.checkSentCode = async (email_address) => {
+    try {
+        let query = "SELECT verify_date FROM VerifyCodePool WHERE email_address = '" + email_address + "'";
+        return new Promise(function (resolve, reject) {
+            dbconnection.query(query, async (err, result) => {
+                if (err) throw err;
+                console.log(result)
+                if (result.length === 0) {
+                    resolve(null);
+                } else {
+                    resolve(true)
+                }
+            })
+        }).then((response) => {
+            if (response) {
+                let query = "DELETE FROM VerifyCodePool WHERE email_address = '" + email_address + "'";
+                dbconnection.query(query, async (err, result) => {
+                    if (err) throw err;
+                    console.log({ status: true, message: "Var olan kod silinmiştir." })
+                });
+            }
+        })
 
-    return (`${yyyy}-${mm}-${dd}`);
-};
+    } catch (error) {
+        console.error(error)
+
+    }
+}
+
 
 exports.forgetPassword = async (email_address) => {
     const checkUser = await this.checkUser(null, email_address, null);
+
     try {
         if (checkUser === null) {
             return { status: false, message: responseMessages.forget_password_error[100] };
         } else {
-            const today = (await this.today()).toString();
+            await this.checkSentCode(email_address);
+
+            
+            const todayWithTime = await datamanager.todayWithTime();
             const key = await keyGenerator.randomkey();
             console.log(key);
             console.log(md5(key))
-            let query = "INSERT INTO VerifyCodePool(email_address,verify_code,verify_date) VALUES ('" + email_address + "' , '" + md5(key) + "','" + today + "')";
-            dbconnection.query(query, (err, result) => {
-                if (err) throw err;
-                return ({ status: false, message: responseMessages.forget_password_error[100] })
+            let query = "INSERT INTO VerifyCodePool(email_address,verify_code,verify_date) VALUES ('" + email_address + "' , '" + md5(key) + "','" + todayWithTime + "')";
+            return new Promise(function (resolve, reject) {
+                dbconnection.query(query, (err, result) => {
+                    if (err) throw err;
 
+                    if (result.length === 0)
+                        resolve({ status: false, message: responseMessages.forget_password_error[103] })
+
+                    else
+                        resolve({ status: true, message: responseMessages.forget_password_success[100] })
+                });
             });
-            return ({ status: true, message: responseMessages.forget_password_success[100] })
         }
     } catch (error) {
-        await utils.errorLog("authentication-service-forget-password", error.message, error);
+        console.error(error)
+
     }
 }
 
 
+
+//email yanlış verilemez.
 exports.verifyCode = async (email_address, verify_code) => {
     try {
-        let query1 = "SELECT * FROM VerifyCodePool WHERE email_address = '" + email_address + "' AND verify_code = '" + md5(verify_code) + "'";
-        if (this.isValidVerifyCode()) {
-            
-        }
-        
-        
-        return new Promise(function (resolve, reject) {
-            dbconnection.query(query1, (err, result) => {
+        let query1 = "SELECT verify_date FROM VerifyCodePool WHERE email_address = '" + email_address + "' AND verify_code = '" + verify_code + "'";
+        return new Promise(async function (resolve, reject) {
+            dbconnection.query(query1, async (err, result) => {
                 if (err) throw err;
                 console.log(result)
                 if (result.length === 0) {
                     resolve({ status: false, message: responseMessages.forget_password_error[101] })
                 }
                 else {
-                    resolve({ status: true, message: responseMessages.forget_password_success[101] })
+                    //bu noktada kod ve email doğru girilmiştir.
+                    let verify_date = result[0].verify_date;
+                    const diffrence = await datamanager.differenceDatesAndToday(verify_date.toUTCString());
+                    if (diffrence > 5.0) {
+                        resolve({ status: false, message: responseMessages.forget_password_error[102] })
+                    } else {
+                        resolve({ status: true, message: responseMessages.forget_password_success[102] })
+                    }
                 }
-            });
+            })
         })
-        
     } catch (error) {
-        
+        console.error(error)
+
     }
-    
 }
 
+exports.updatePassword = async (email_address, verify_code, password) => {
+    try {
+        const isValid = await this.verifyCode(email_address, verify_code)
+        console.log(isValid)
+        if (!isValid.status) {
+            return isValid;
+        }
+        let query =
+            "UPDATE Users u JOIN VerifyCodePool vcp ON " +
+            "(u.email_address = vcp.email_address) " +
+            "SET u.password_ = '" + password + "' " +
+            "WHERE vcp.verify_code = '" + verify_code + "' AND " +
+            "vcp.email_address = '" + email_address + "' AND " +
+            "u.email_address = '" + email_address + "'";
+        return new Promise(async function (resolve, reject) {
+            dbconnection.query(query, async (err, result) => {
+                if (err) throw err;
+                if (result.length === 0) {
+                    resolve({ status: false, message: responseMessages.forget_password_error[103] })
+                } else {
+                    resolve({ status: true, message: responseMessages.forget_password_success[103] })
+                }
+            })
+        }).then((response) => {
+            if (response.status) {
+                let query = "DELETE FROM VerifyCodePool WHERE email_address = '" + email_address + "'";
+                dbconnection.query(query, async (err, result) => {
+                    if (err) throw err;
+                });
+                return response;
+            }
 
 
-exports.isValidVerifyCode = async (email_address, verify_code) => {
-    /* ! BURADA GONDERILEN KODUN ZAMANININ BITIP BITMEDIGINI KONTROL EDIYORUM!
-    */
-    
-    
+        });
+    } catch (error) {
+        console.error(error)
 
+    }
 }
-
-
-
-
-
-
-
-
 /**
- * 
-{
+ {
+
     "username": "tronho",
-    "password": "q12332sdas1ss",
-    "phone_number": "054sdsaad18008741",
-    "email_address": "eneasdadssakbal00@gmail.com",
+    "password": "salak524252",
+    "phone_number": "05111111111",
+    "email_address": "q123321ss@gmail.com",
     "profile_picture": "12wasdgfdagadf",
-    "birth_date": "2001/07/29"
+    "birth_date": "2001/07/29",
+    "verify_code": 400160
 }
 
-
-
-INSERT INTO `Users` (`PK_user_id`, `username`, `password_`, `zeta_point`, `phone_number`, `email_address`, `profile_picture`, `birth_date`, `verify_phone_number`, `verify_email_address`, `account_created_time`) VALUES (NULL, 'enesakbl', 'q123321ss', '1000', '05418008741', 'eneasakbal00@gmail.com', NULL, '2001-07-29', '0', '0', '2022-07-16');
+ 
+ 
+ 
+ 
  */
