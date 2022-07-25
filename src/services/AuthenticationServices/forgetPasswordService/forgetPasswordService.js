@@ -3,11 +3,13 @@ const httpStatus = require('http-status');
 const md5 = require('md5');
 
 const responseMessages = require('../../../utils/responseMessages');
+const mailService = require("../../MailService/mailService")
 
-const keyGenerator = require('../../../helpers/keyGenerator');
-const dateManager = require('../../../helpers/dateManager');
+const keyGenerator = require('../../../utils/keyGenerator');
+const dateManager = require('../../../utils/dateManager')
 const { createSuccess } = require('../../../helpers/successHandling/createSuccess');
 const { createError } = require("../../../helpers/errorHandling/createError");
+const logger = require("../../../helpers/logger/logger")
 
 
 
@@ -19,7 +21,7 @@ exports.forgetPassword = async (email_address) => {
 
     try {
         if (checkUser === null) {
-            return createError({ status: httpStatus.NOT_FOUND, message: responseMessages.forget_password_error.not_found_email_address });
+            return createError({ status: httpStatus.NOT_FOUND, message: responseMessages.forget_password_error.not_found_email_address, service: 'forget password service' });
         } else {
             await this.checkSentCode(email_address);
 
@@ -34,10 +36,13 @@ exports.forgetPassword = async (email_address) => {
                     if (err) throw err;
 
                     if (result.length === 0)
-                        return resolve(createError({ status: httpStatus.INTERNAL_SERVER_ERROR, message: responseMessages.forget_password_error.an_unknown_error_occurred }))
+                        return resolve(createError({ status: httpStatus.INTERNAL_SERVER_ERROR, message: responseMessages.forget_password_error.an_unknown_error_occurred, service: 'forget password service', requestBody: { email_address }, functionName: "forgetPassword" }))
 
-                    else
-                        return resolve(createSuccess({ message: responseMessages.forget_password_success.code_sent_successfully }))
+                    else {
+                        mailService.sendVerifyCodeToEmail(email_address, key)
+                        return resolve(createSuccess({ status: httpStatus.OK, message: responseMessages.forget_password_success.code_sent_successfully, service: 'forget password service', requestBody: { email_address }, functionName: "forgetPassword" }))
+
+                    }
                 });
             });
         }
@@ -88,7 +93,10 @@ exports.checkSentCode = async (email_address) => {
                 let query = "DELETE FROM VerifyCodePool WHERE email_address = '" + email_address + "'";
                 dbConnection.query(query, async (err, result) => {
                     if (err) throw err;
-                    console.log({ status: true, message: "Var olan kod silinmiştir." })
+                    console.log({ status: true, message: "Var olan kod silinmiştir." });
+                    logger('forget password service', 'checkSentCode', { email_address }, '200').log('info', "Var olan kod silinmiştir.")
+                    // logger(errorService, errorFunctionName, errorRequestBody, errorStatus).log('error', errorMessage)
+
                 });
             }
         })
@@ -120,11 +128,11 @@ exports.updatePassword = async (email_address, verify_code, password) => {
             dbConnection.query(query, async (err, result) => {
                 if (err) throw err;
                 if (result.length === 0) {
-                    return resolve(createError({ status: httpStatus.INTERNAL_SERVER_ERROR, message: responseMessages.forget_password_error.an_unknown_error_occurred }))
+                    return resolve(createError({ status: httpStatus.INTERNAL_SERVER_ERROR, message: responseMessages.forget_password_error.an_unknown_error_occurred, service: 'forget password service', requestBody: { email_address, verify_code, password }, functionName: "updatePassword" }))
 
                 } else {
 
-                    return resolve(createSuccess({ message: responseMessages.forget_password_success.reset_successfully }))
+                    return resolve(createSuccess({ status: httpStatus.OK, message: responseMessages.forget_password_success.reset_successfully, service: 'forget password service', requestBody: { email_address, verify_code, password }, functionName: "updatePassword" }))
 
                 }
             })
@@ -159,7 +167,7 @@ exports.verifyCode = async (email_address, verify_code) => {
                 if (err) throw err;
                 console.log("result : " + result)
                 if (result.length === 0) {
-                    return resolve(createError({ status: httpStatus.FORBIDDEN, message: responseMessages.forget_password_error.incorret_code }))
+                    return resolve(createError({ status: httpStatus.FORBIDDEN, message: responseMessages.forget_password_error.incorret_code, service: 'forget password service', requestBody: { email_address, verify_code }, functionName: "verifyCode" }))
 
                 }
                 else {
@@ -168,12 +176,12 @@ exports.verifyCode = async (email_address, verify_code) => {
                     const diffrence = await dateManager.differenceDatesAndToday(verify_date.toUTCString());
 
                     //5 dakika olayı burada
-                    if (diffrence > 65.0) {
-                        return resolve(createError({ status: httpStatus.GONE, message: responseMessages.forget_password_error.expired_code }))
+                    if (diffrence > 5.0) {
+                        return resolve(createError({ status: httpStatus.GONE, message: responseMessages.forget_password_error.expired_code, service: 'forget password service', requestBody: { email_address, verify_code }, functionName: "verifyCode" }))
 
                     } else {
-
-                        return resolve(createSuccess({ message: responseMessages.forget_password_success.code_is_valid }))
+                        logger('forget password service', 'verifyCode', { email_address }, '200').log('info', responseMessages.forget_password_success.code_is_valid)
+                        return resolve(createSuccess({ status: httpStatus.OK, message: responseMessages.forget_password_success.code_is_valid, service: 'forget password service', requestBody: { email_address, verify_code }, functionName: "verifyCode" }))
 
                     }
                 }

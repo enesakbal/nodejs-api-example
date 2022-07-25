@@ -9,7 +9,17 @@ exports.login = async (req, res, next) => {
 
     const error = loginSchema.validate(req.body).error
     if (error)
-        return next(createError({status :httpStatus.BAD_REQUEST, message : error.details[0].message}))
+        return next(
+            createError({
+                status: httpStatus.BAD_REQUEST,
+                message: error.details[0].message,
+                service: 'login service - validation',
+                requestBody: {
+                    ...req.body,
+                    "password": md5(req.body.password)
+                },
+                functionName: "login"
+            }))
     const response =
         await loginService.login(
             req.body.email_address,

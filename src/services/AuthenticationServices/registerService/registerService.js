@@ -3,7 +3,7 @@ const httpStatus = require('http-status');
 
 const responseMessages = require('../../../utils/responseMessages')
 
-const dateManager = require('../../../helpers/dateManager')
+const dateManager = require('../../../utils/dateManager')
 const { createSuccess } = require('../../../helpers/successHandling/createSuccess');
 const { createError } = require("../../../helpers/errorHandling/createError");
 
@@ -20,7 +20,7 @@ exports.register = async (username, password, email_address, profile_picture, bi
                 dbconnection.query(query, (err, result) => {
                     if (err) throw err;
                 });
-                return resolve(createSuccess({ status: httpStatus.CREATED, message: responseMessages.register_success.created_account }))
+                return resolve(createSuccess({ status: httpStatus.CREATED, message: responseMessages.register_success.created_account, service: 'register service', requestBody: { username, password, email_address, profile_picture, birth_date, gender }, functionName: "register" }))
 
             });
         } else {
@@ -42,9 +42,9 @@ exports.checkUser = async (username, email_address) => {
             //map olmasının nedeni birden fazla sonuç gelebilir.
             result.map(value => {
                 if (value.username === username) {
-                    return   resolve(createError({ status: httpStatus.FORBIDDEN, message: responseMessages.register_error.already_exists_username }))
+                    return resolve(createError({ status: httpStatus.FORBIDDEN, message: responseMessages.register_error.already_exists_username, service: 'register service', requestBody: { username }, functionName: "register" }))
                 } else if (value.email_address === email_address) {
-                    return   resolve(createError({ status: httpStatus.FORBIDDEN, message: responseMessages.register_error.already_exists_email }))
+                    return resolve(createError({ status: httpStatus.FORBIDDEN, message: responseMessages.register_error.already_exists_email, service: 'register service', requestBody: { email_address }, functionName: "register" }))
 
                 }
             })

@@ -10,7 +10,18 @@ const registerService = require('../../../services/AuthenticationServices/regist
 exports.register = async (req, res, next) => {
     const error = registerSchema.validate(req.body).error
     if (error)
-        return next(createError({ status: httpStatus.BAD_REQUEST, message: error.details[0].message }))
+        return next(
+            createError({
+                status: httpStatus.BAD_REQUEST,
+                message: error.details[0].message,
+                service: 'register service - validation',
+                requestBody: {
+                    ...req.body,
+                    "password": md5(req.body.password),
+
+                },
+                functionName: "login"
+            }))
     // return res.status(httpStatus.BAD_REQUEST).send({ status: false, message: error.details[0].message })
 
     const response =
@@ -22,7 +33,6 @@ exports.register = async (req, res, next) => {
             req.body.birth_date,
             req.body.gender
         );
-    console.log("31231");
     return next(response)
 
 

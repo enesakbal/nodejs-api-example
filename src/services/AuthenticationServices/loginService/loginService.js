@@ -36,9 +36,9 @@ exports.login = async (email_address, password) => {
                         jwt_secret_key,
                         { expiresIn: '180d' }
                     );
-                    return resolve(createSuccess({ message: responseMessages.login_success.login_successfully, token }));
+                    return resolve(createSuccess({ status: httpStatus.OK, message: responseMessages.login_success.login_successfully, token: token, service: 'login service', requestBody: { email_address, password }, functionName: "login" }));
                 } else {
-                    return resolve(createError({ status: httpStatus.BAD_REQUEST, message: responseMessages.login_error.invalid_email_or_password }))
+                    return resolve(createError({ status: httpStatus.BAD_REQUEST, message: responseMessages.login_error.invalid_email_or_password, service: 'login service', requestBody: { email_address, password }, functionName: "login" }))
                 }
             });
         })

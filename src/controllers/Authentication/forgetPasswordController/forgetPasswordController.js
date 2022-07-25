@@ -7,11 +7,19 @@ const { createError } = require("../../../helpers/errorHandling/createError");
 exports.forgetPassword = async (req, res, next) => {
     const error = passwordSchema.forgetPasswordSchema().validate(req.body).error;
     if (error)
-        return next(createError({ status: httpStatus.BAD_REQUEST, message: error.details[0].message }))
-    
+        return next(createError({
+            status: httpStatus.BAD_REQUEST,
+            message: error.details[0].message,
+            service: 'forget password service - validation',
+            requestBody: {
+                ...req.body,
+            },
+            functionName: "forgetPassword"
+        }))
+
     const response = await forgetPasswordService.forgetPassword(req.body.email_address);
-    // console.log(response)
     //todo burada mail göndermeliyim
+    
     return next(response)
 }
 
@@ -19,8 +27,19 @@ exports.forgetPassword = async (req, res, next) => {
 exports.updatePassword = async (req, res, next) => {
     const error = passwordSchema.updatePasswordSchema().validate(req.body).error
     if (error) {
-        return next(createError({ status: httpStatus.BAD_REQUEST, message: error.details[0].message }))
+        return next(createError({
+            status: httpStatus.BAD_REQUEST,
+            message: error.details[0].message,
+            service: 'forget password service update password - validation',
+            requestBody: {
+                ...req.body,
+                "verify_code": md5(req.body.verify_code),
+                "password": md5(req.body.password)
+            },
+            functionName: "updatePassword"
+        }))
     }
+
     const response =
         await forgetPasswordService.updatePassword(
             req.body.email_address,
@@ -28,8 +47,7 @@ exports.updatePassword = async (req, res, next) => {
             md5(req.body.password)
         );
     // console.log(response);
-    
-    return next(response)
 
+    return next(response)
 }
 

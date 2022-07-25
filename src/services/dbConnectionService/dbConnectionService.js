@@ -6,11 +6,14 @@ var dbconnection = mysql.createPool(
     mysql_config
 );
 
+
+
 // Attempt to catch disconnects 
 dbconnection.on('connection', function (connection) {
-    console.log('DB Connection established');
+    console.log('DB Bağlantısı başarılı.');
 
 });
 
+
+
 module.exports = dbconnection;
- 
