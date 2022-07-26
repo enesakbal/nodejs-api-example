@@ -17,7 +17,7 @@ exports.register = async (req, res, next) => {
                 service: 'register service - validation',
                 requestBody: {
                     ...req.body,
-                    "password": md5(req.body.password),
+                    "password": md5(req.body.password)
 
                 },
                 functionName: "login"

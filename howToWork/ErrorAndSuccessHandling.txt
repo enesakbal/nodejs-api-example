@@ -1,0 +1,43 @@
+----CREATE ERROR----
+1.  Content adı altında veriler bu fonnksiyona geçer.
+2.  Veriler parse edilerek ve bazı default değerler alarak Error sınıfından bir nesneye atanır.
+3.  Verilen atandığı Error sınıf return edilir.
+
+
+
+----ERROR HANDLING----
+1.  Eğer err parametresinden gelen success değeri true ise next() denilip
+    SuccessHandling Fonksiyonuna geçer. Bu sayede önce error olup olmadığını kontrol ederiz.
+    Bu sistem bir elek gibi düşünülebilir.
+
+2.  Eğer success true değilse, gelen err objesi parçalanır. Parçalanan objenin bazı değerleri loglanır
+    bazı değerleri ise response olarak gönderilir. => {
+        success: false,
+        status: errorStatus,
+        service: errorService,
+        message: errorMessage
+    }
+
+
+----CREATE SUCCESS----
+1.  Bu fonksiyon bize bir json return eder. En önemli parametresi success = true'dur.
+2.  Create Error fonksiyonu gibi bazı default atamalar yapılır.
+3.  Content adı altında veriler bu fonnksiyona geçer.
+
+
+----SUCCESS HANDLING----
+1.  Bu fonksiyona create successden gelen json veri gelir ve burada parse edilir.
+2.  Parse edilen değerlerin bir kısmı loglanır bir kısmı ise response olarak gönderilir. =>{
+        success: true,
+        status: status,
+        service: service,
+        message: message,
+        token: token 
+    }
+
+
+
+----CREATE DB ERROR----
+1.  getConnection fonksiyonu olurda bize bir hata gönderirse (örn: ACCESS DENIED) bu hatayı yakalayıp 
+    response olarak gönderilmesini sağlar.
+2.  Gelen her istekte kontrol edilir.? bu kısım optimizasyon açısından ne kadar doğru henüz bilmiyorum.

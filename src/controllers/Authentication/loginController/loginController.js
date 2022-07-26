@@ -16,7 +16,8 @@ exports.login = async (req, res, next) => {
                 service: 'login service - validation',
                 requestBody: {
                     ...req.body,
-                    "password": md5(req.body.password)
+                    "password": md5((req.body.password).toString())
+                    //todo postmanden bodyi boş bırakıp post attığımda hata alıyorum.
                 },
                 functionName: "login"
             }))

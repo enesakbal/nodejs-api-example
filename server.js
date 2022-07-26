@@ -1,6 +1,7 @@
 const express = require('express');
 const helmet = require('helmet');
 const nodeMailer = require("nodemailer");
+const ejs = require('ejs')
 
 const { dbErrorHandling } = require('./src/helpers/dbErrorsHandling/dbErrorsHandling');
 const { errorHandling } = require('./src/helpers/errorHandling/errorHandling');
@@ -12,10 +13,10 @@ const apiEndpoint = require('./src/routes/api');
 const sendEmail = require('./src/services/MailService/mailService');
 const app = express();
 app.use(helmet());
+app.set('view engine', 'ejs');
 
 
 app.use(express.json());
-
 
 
 app.use(dbErrorHandling)

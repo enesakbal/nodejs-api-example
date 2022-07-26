@@ -1,0 +1,2 @@
+----Logger-----
+1.  service, functionName, requestBody, status parametlerili alır ve loglar.

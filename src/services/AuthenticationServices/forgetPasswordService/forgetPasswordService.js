@@ -32,14 +32,14 @@ exports.forgetPassword = async (email_address) => {
             console.log("verify code :" + md5(key));
             let query = "INSERT INTO VerifyCodePool(email_address,verify_code,verify_date) VALUES ('" + email_address + "' , '" + md5(key) + "','" + todayWithTime + "')";
             return new Promise(function (resolve, reject) {
-                dbConnection.query(query, (err, result) => {
+                dbConnection.query(query, async (err, result) => {
                     if (err) throw err;
 
                     if (result.length === 0)
                         return resolve(createError({ status: httpStatus.INTERNAL_SERVER_ERROR, message: responseMessages.forget_password_error.an_unknown_error_occurred, service: 'forget password service', requestBody: { email_address }, functionName: "forgetPassword" }))
 
                     else {
-                        mailService.sendVerifyCodeToEmail(email_address, key)
+                        await mailService.sendVerifyCodeToEmail(email_address, key)
                         return resolve(createSuccess({ status: httpStatus.OK, message: responseMessages.forget_password_success.code_sent_successfully, service: 'forget password service', requestBody: { email_address }, functionName: "forgetPassword" }))
 
                     }

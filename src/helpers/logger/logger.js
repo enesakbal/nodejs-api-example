@@ -18,9 +18,9 @@ const logger = (service, functionName, requestBody, status) => {
         level: 'debug',
         format: customFormat,
         defaultMeta: {
-            service: service ?? 'Service is empty.',
-            functionName: functionName ?? 'Function Name is empty.',
-            requestBody: requestBody ?? 'Request Body is empty.',
+            service: service || 'Service is empty.',
+            functionName: functionName || 'Function Name is empty.',
+            requestBody: requestBody || 'Request Body is empty.',
             status: status
         },
         transports: [
